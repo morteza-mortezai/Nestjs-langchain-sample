@@ -9,6 +9,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 import { RagModule } from './modules/rag/rag.module';
 import { LlmModule } from './modules/llm/llm.module';
+import { LangchainModule } from './modules/langchain/langchain.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LlmModule } from './modules/llm/llm.module';
     EmbeddingsModule,
     RagModule,
     LlmModule,
+    LangchainModule,
   ],
   controllers: [AppController],
   providers: [],
