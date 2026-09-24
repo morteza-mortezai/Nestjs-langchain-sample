@@ -15,21 +15,33 @@ export class LangchainService {
   });
 
   async testEmbedding() {
-    const vector = await this.embeddings.embedQuery(
-      'How many vacation days do employees get?',
-    );
+    let vector: any;
+    try {
+      vector = (await this.embeddings.embedQuery(
+        'How many vacation days do employees get?',
+      )) as any;
+    } catch (err) {
+      console.error('Embedding failed:', err);
+      throw err;
+    }
 
     return {
-      dimensions: vector.length,
-      vector,
+      dimensions: (vector as any[]).length,
+      vector: vector as any[],
     };
   }
 
   async testLlm() {
-    const response = await this.llm.invoke(
-      'What is RAG? Answer in one sentence.',
-    );
+    let response: any;
+    try {
+      response = (await this.llm.invoke(
+        'What is RAG? Answer in one sentence.',
+      )) as any;
+    } catch (err) {
+      console.error('LLM invoke failed:', err);
+      throw err;
+    }
 
-    return response.content;
+    return (response as any).content;
   }
 }
