@@ -11,7 +11,7 @@ const ormConfig = defineConfig({
   extensions: [Migrator],
   host: process.env.DB_HOST ?? 'localhost',
   port: Number(process.env.DB_PORT ?? 5433),
-  dbName: process.env.DB_NAME ?? 'langchain',
+  dbName: process.env.DB_NAME ?? 'rag',
   user: process.env.DB_USER ?? 'postgres',
   password: process.env.DB_PASSWORD ?? 'postgres',
   ensureDatabase: true,
