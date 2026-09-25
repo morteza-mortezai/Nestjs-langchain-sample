@@ -5,8 +5,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class LangchainService implements OnModuleInit {
-  private readonly logger = new Logger(LangchainService.name);
   constructor(private readonly config: ConfigService) {}
+  private readonly logger = new Logger(LangchainService.name);
   private vectorStore!: PGVectorStore;
 
  
