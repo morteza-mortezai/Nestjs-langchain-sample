@@ -2,19 +2,36 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
 import { ConfigService } from '@nestjs/config';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { RunnablePassthrough } from '@langchain/core/runnables';
+import { StringOutputParser } from '@langchain/core/output_parsers';
 
 @Injectable()
 export class LangchainService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
   private readonly logger = new Logger(LangchainService.name);
   private vectorStore!: PGVectorStore;
+  prompt = ChatPromptTemplate.fromTemplate(`
+You are a helpful assistant.
 
- 
+Answer the question using ONLY the provided context.
+
+If the answer cannot be found in the context,
+say:
+"I don't know based on the provided documents."
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+`);
 
   private readonly embeddings = new OllamaEmbeddings({
     model: 'nomic-embed-text',
     baseUrl: 'http://localhost:11434',
- 
   });
 
   async onModuleInit() {
@@ -48,7 +65,7 @@ export class LangchainService implements OnModuleInit {
     model: 'llama3.2:3b',
     temperature: 0,
     baseUrl: 'http://localhost:11434',
-   });
+  });
 
   async testEmbedding() {
     let vector: any;
@@ -88,8 +105,29 @@ export class LangchainService implements OnModuleInit {
       });
 
       const documents = await retriever.invoke(question);
+      const context = documents
+        .map((doc, index) => {
+          return `[Source ${index + 1}]
+${doc.pageContent}`;
+        })
+        .join('\n\n');
 
-      return documents;
+      const messages = await this.prompt.invoke({
+        context,
+        question,
+      });
+
+      this.logger.debug(messages);
+
+      const response = await this.llm.invoke(messages);
+
+      return {
+        answer: response.content,
+        sources: documents.map((doc) => ({
+          content: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      };
     } catch (err) {
       this.logger.error('Search failed', err);
       throw new Error(
