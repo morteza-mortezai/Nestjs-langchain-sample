@@ -3,7 +3,11 @@ import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
 import { ConfigService } from '@nestjs/config';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { RunnablePassthrough } from '@langchain/core/runnables';
+import {
+  RunnableParallel,
+  RunnablePassthrough,
+  RunnableLambda,
+} from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 
 @Injectable()
@@ -11,6 +15,7 @@ export class LangchainService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
   private readonly logger = new Logger(LangchainService.name);
   private vectorStore!: PGVectorStore;
+
   prompt = ChatPromptTemplate.fromTemplate(`
 You are a helpful assistant.
 
@@ -134,5 +139,42 @@ ${doc.pageContent}`;
         `Search failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
       );
     }
+  }
+
+  private formatDocuments(documents: any[]): string {
+    return documents
+      .map(
+        (doc, index) =>
+          `[Source ${index + 1}]
+${doc.pageContent}`,
+      )
+      .join('\n\n');
+  }
+
+  ask3(question: string) {
+    const retriever = this.vectorStore.asRetriever({
+      k: 5,
+    });
+
+    const formatDocuments = new RunnableLambda({
+      func: async (documents: any[]) =>
+        documents
+          .map(
+            (doc, index) =>
+              `[Source ${index + 1}]
+${doc.pageContent}`,
+          )
+          .join('\n\n'),
+    });
+
+    const ragChain = RunnableParallel.from({
+      context: retriever.pipe(formatDocuments),
+      question: new RunnablePassthrough(),
+    })
+      .pipe(this.prompt)
+      .pipe(this.llm)
+      .pipe(new StringOutputParser());
+
+    return ragChain.invoke(question);
   }
 }

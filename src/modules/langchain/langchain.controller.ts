@@ -28,6 +28,6 @@ export class LangchainController {
 
   @Post('search')
   search(@Body() dto: QuestionDto) {
-    return this.langChainService.search(dto.question);
+    return this.langChainService.ask3(dto.question);
   }
 }
